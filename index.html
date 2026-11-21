@@ -1,0 +1,796 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>还款日还早</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif; background: #f4f1ea; color: #2a2620; line-height: 1.6; }
+  .wrap { max-width: 980px; margin: 0 auto; padding: 20px 14px 40px; }
+  h1 { font-size: 25px; letter-spacing: 1px; }
+  .lead { color: #6b6255; font-size: 14px; margin: 4px 0 14px; }
+  .card { background: #fff; border-radius: 8px; padding: 14px; border: 1px solid #ddd3c2; margin-bottom: 14px; min-width: 0; }
+  .card h2 { font-size: 15px; color: #6b6255; font-weight: 600; margin-bottom: 8px; overflow-wrap: anywhere; }
+  input[type=text], input:not([type]), select { font: inherit; font-size: 14px; padding: 4px 6px; border: 1px solid #bcae96; border-radius: 5px; width: 100%; min-width: 0; background: #fffdf9; font-variant-numeric: tabular-nums; }
+  .bad { border-color: #b23a2b !important; background: #fff0ec !important; }
+  label { font-size: 12px; color: #7a7062; display: block; }
+  button { font: inherit; font-size: 13px; padding: 6px 11px; border-radius: 5px; border: 1px solid #8a4b1f; background: #8a4b1f; color: #fff; cursor: pointer; }
+  button.ghost { background: #fff; color: #8a4b1f; }
+  button.sm { padding: 2px 8px; font-size: 12px; }
+  button:disabled { opacity: .45; cursor: default; }
+  .row2 { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 10px; }
+  .presets, .dl { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
+  .err { display: none; background: #fff0ec; border: 1px solid #e0b2a7; color: #8a2a1b; border-radius: 8px; padding: 10px 12px; margin-bottom: 14px; overflow-wrap: anywhere; }
+  .muted { color: #7a7062; font-size: 12px; }
+  /* 卡 */
+  .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 10px; }
+  .cc { border-radius: 10px; padding: 10px; color: #fff; display: grid; grid-template-columns: 1fr 1fr; gap: 6px 8px; min-width: 0; }
+  .cc label { color: rgba(255,255,255,.85); }
+  .cc input, .cc select { background: rgba(255,255,255,.95); }
+  .cc .full { grid-column: 1 / -1; }
+  .k0 { background: #8a4b1f; } .k1 { background: #2f6b5a; } .k2 { background: #4b4f8a; } .k3 { background: #8a2f5d; } .kx { background: #9a9182; }
+  /* 笔 */
+  .buy { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1.1fr) minmax(0, 0.9fr) minmax(0, 1.6fr); gap: 6px 10px; align-items: end; padding: 7px 0; border-bottom: 1px dashed #e6dccb; }
+  .buy .out { font-size: 13px; min-width: 0; overflow-wrap: anywhere; }
+  .chip { display: inline-block; color: #fff; border-radius: 4px; padding: 0 6px; font-size: 12px; font-weight: 700; margin-right: 6px; max-width: 100%; overflow-wrap: anywhere; }
+  @media (max-width: 640px) { .buy { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } .buy .out { grid-column: 1 / -1; } }
+  #summary { font-size: 20px; font-weight: 700; overflow-wrap: anywhere; margin-bottom: 6px; }
+  #facts { margin: 8px 0 0 18px; font-size: 14px; } #facts li { margin: 3px 0; overflow-wrap: anywhere; }
+  /* 月历 */
+  .cal { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 3px; }
+  .cal .wd { font-size: 11px; color: #7a7062; text-align: center; }
+  .cal .c { border-radius: 5px; padding: 3px 4px; min-height: 52px; color: #fff; font-size: 11px; line-height: 1.3; min-width: 0; overflow: hidden; position: relative; }
+  .cal .c b { font-size: 13px; display: block; }
+  .cal .c .n { font-size: 15px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .cal .c.pad { background: transparent; }
+  .cal .c.hasbuy { outline: 3px solid #2a2620; outline-offset: -3px; }
+  .cal .c .st { position: absolute; right: 3px; top: 2px; font-size: 10px; background: rgba(255,255,255,.9); color: #2a2620; border-radius: 3px; padding: 0 3px; }
+  @media (max-width: 480px) { .cal .c { min-height: 44px; padding: 2px; font-size: 10px; } .cal .c .n { font-size: 13px; } .cal .c .nm { display: none; } .cal .c .st { font-size: 9px; } }
+  .legend { display: flex; gap: 10px; flex-wrap: wrap; font-size: 12px; margin-top: 6px; }
+  .legend span { display: inline-flex; align-items: center; gap: 4px; } .legend i { width: 12px; height: 12px; border-radius: 3px; display: inline-block; }
+  /* 还款单 */
+  .bill { display: grid; grid-template-columns: 7em minmax(0, 1fr) auto; gap: 8px; align-items: baseline; padding: 6px 0; border-bottom: 1px solid #efe7da; font-size: 14px; }
+  .bill .amt { font-weight: 700; font-variant-numeric: tabular-nums; }
+  .bill .what { min-width: 0; overflow-wrap: anywhere; color: #6b6255; font-size: 13px; }
+  .tw { overflow-x: auto; }
+  table.t { width: 100%; border-collapse: collapse; font-size: 13px; font-variant-numeric: tabular-nums; min-width: 460px; }
+  table.t th, table.t td { padding: 5px 6px; border-bottom: 1px solid #efe7da; text-align: right; white-space: nowrap; }
+  table.t th:first-child, table.t td:first-child { text-align: left; white-space: normal; min-width: 10em; }
+  table.t th { color: #7a7062; font-weight: 600; font-size: 12px; }
+  table.t tr.best td { background: #f6ead9; font-weight: 700; }
+  #sugs { display: grid; gap: 8px; }
+  .sug { display: flex; gap: 10px; align-items: center; justify-content: space-between; border: 1px solid #efe7da; border-radius: 6px; padding: 8px 10px; }
+  .sug span { min-width: 0; overflow-wrap: anywhere; font-size: 14px; } .sug button { flex: none; }
+  @media (max-width: 480px) { .sug { flex-direction: column; align-items: stretch; } }
+  .how { font-size: 13px; color: #4a4339; } .how p { margin: 6px 0; } .how b { color: #2a2620; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>还款日还早</h1>
+  <p class="lead">手里几张信用卡账单日不一样，同一天刷不同的卡，要还钱的日子能差好几周。把卡和接下来要刷的几笔钱填进去，这里排出每笔刷哪张、什么时候还，钱在自己手里留得最久，同时不超额度。默认数据是虚构的。</p>
+
+  <div class="card">
+    <h2>手里的卡（最多 4 张）</h2>
+    <div class="cards" id="cards"></div>
+    <div class="presets"><button class="ghost" id="addCard">加一张卡</button><button class="ghost" id="delCard">去掉最后一张</button></div>
+    <div class="row2" style="margin-top:10px">
+      <div><label for="start">从哪天开始看</label><input id="start" maxlength="10"></div>
+      <div><label for="yieldPct">晚还的钱放着的年化（%，只用来折算）</label><input id="yieldPct" inputmode="decimal"></div>
+    </div>
+    <div class="presets" id="presets"></div>
+  </div>
+
+  <div class="err" id="error"></div>
+
+  <div class="card" id="outTop">
+    <div id="summary"></div>
+    <ul id="facts"></ul>
+  </div>
+
+  <div class="card">
+    <h2>接下来要刷的（最多 15 笔）</h2>
+    <div id="buys"></div>
+    <div class="presets"><button class="ghost" id="addBuy">加一笔</button><button class="ghost" id="delBuy">去掉最后一笔</button></div>
+  </div>
+
+  <div class="card">
+    <h2>六周月历：哪天刷哪张最晚还</h2>
+    <div class="cal" id="cal"></div>
+    <div class="legend" id="legend"></div>
+    <p class="muted" style="margin-top:4px">格子颜色 = 那天刷哪张卡还款最晚（不管额度），大数字 = 免息天数；黑框 = 那天有要刷的；角标「出」= 那张卡的账单日。</p>
+  </div>
+
+  <div id="out">
+    <div class="card">
+      <h2>还款单：哪天还哪张、还多少</h2>
+      <div id="bills"></div>
+    </div>
+    <div class="card">
+      <h2>三种刷法放一起比</h2>
+      <div class="tw"><table class="t" id="cmpTbl"></table></div>
+    </div>
+    <div class="card" id="sugCard">
+      <h2>换个条件看看（点一下代回去重算）</h2>
+      <div id="sugs"></div>
+    </div>
+  </div>
+  <div class="card">
+    <h2>带走结果</h2>
+    <div class="dl">
+      <button id="dlCSV">CSV 表格</button><button id="dlMD">Markdown</button><button id="dlPNG">结果卡 PNG</button><button id="dlJSON" class="ghost">JSON 备份</button>
+      <button id="reset" class="ghost">恢复默认</button>
+    </div>
+    <p class="muted" style="margin-top:6px">输入自动保存在这台设备的浏览器里，刷新还在。</p>
+  </div>
+
+  <div class="card how">
+    <h2>怎么算的</h2>
+    <p><b>进哪期账单</b>：刷卡那天的日子不晚于账单日，进本月这期；晚于账单日，进下个月那期。账单日当天刷的按本期算（偏保守，有的银行按入账日算会进下期）。</p>
+    <p><b>还款日</b>：「每月 X 号还」取账单日之后第一个 X 号；「出账后 N 天还」就是账单日加 N 天。<b>免息天数</b> = 还款日 − 刷卡日。</p>
+    <p><b>额度</b>：一笔从刷卡那天起占着额度，到它那期还款日还清才放出来。任何一笔刷下去那一刻，这张卡上没还的合计不能超过可用额度；哪张都刷不下就算「直接付」，0 天。</p>
+    <p><b>排法</b>：把每笔放到每张卡上的所有组合都试一遍（分支定界，剪掉不可能更好的分支），挑「金额 × 免息天数」加起来最大的；一样大时直接付的笔数少的优先。笔数和卡都多时搜索有步数上限，没证完会写出来。</p>
+    <p class="muted">不做：最低还款和分期、逾期罚息、积分和返现、取现、还款日遇节假日顺延、宽限期、各银行的入账日规则。默认每期在还款日全额还清。这里只排日子，不推荐任何银行或卡，也不鼓励多刷。</p>
+  </div>
+</div>
+
+  <script>
+/* 还款日还早 · 计算核心（浏览器里挂 window.AppCore，Node 里 module.exports）
+ * 手里有 1–4 张信用卡，每张有账单日、还款日、可用额度。接下来要刷的几笔钱，每笔刷哪张，钱能在自己手里多留几天（免息天数）。
+ *
+ * 规则（本页的假设，各行细则不同，以发卡行为准）：
+ *  - 账单日 s（1–28）：刷卡日的「日」≤ s 进本月 s 日那期账单，> s 进下月 s 日那期。账单日当天刷的算进本期（偏保守）。
+ *  - 还款日两种写法：①「每月 X 日还」= 账单日之后第一个 X 日（X 1–28）；②「出账后 N 天」= 账单日 + N 天（N 1–60）。
+ *  - 免息天数 = 还款日 − 刷卡日（相差几天）。假设每期在还款日全额还清，还款日当天先还款、额度恢复后再刷。
+ *  - 额度：一笔从刷卡日起占用，到它那期的还款日恢复。任何一笔刷下去那一刻，这张卡上「已刷未还」的合计不能超过可用额度。
+ *  - 不刷信用卡也行：「直接付」算 0 天，所以总有排法。
+ *  目标：Σ 金额 × 免息天数（元·天）最大；一样大时直接付的笔数少、再按卡的顺序靠前。
+ *  搜索：分支定界（上界 = 已排 + 剩下每笔不管额度的最好天数），节点数有上限，超上限会如实标「没证完最优」。
+ *  日期全部用 UTC 天数，金额内部用「分」整数。 */
+(function (root) {
+  'use strict';
+  const MAXCARDS = 4, MAXBUYS = 15, CAL = 42, NODE_CAP = 400000, SUG_CAP = 40000;
+  const DAY = 86400000;
+
+  function round(x, d) { const m = Math.pow(10, d); return Math.round((x + (x >= 0 ? 1 : -1) * 1e-12) * m) / m; }
+  function fmt(x, d) {
+    const r = round(x, d);
+    let s = Math.abs(r).toFixed(d);
+    if (d > 0) s = s.replace(/\.?0+$/, '');
+    const parts = s.split('.');
+    parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    return (r < 0 ? '-' : '') + parts.join('.');
+  }
+  /* 元：输入「分」，整元省掉 .00 */
+  function yuan(f) {
+    const c = Math.round(f + (f >= 0 ? 1e-9 : -1e-9));
+    const neg = c < 0, a = Math.abs(c);
+    const y = Math.floor(a / 100), r = a % 100;
+    return (neg ? '-' : '') + '¥' + String(y).replace(/\B(?=(\d{3})+(?!\d))/g, ',') + (r ? '.' + String(r).padStart(2, '0') : '');
+  }
+  function err(message, field) { const e = new Error(message); e.field = field; return e; }
+  function num(v, field, label, lo, hi, opt) {
+    opt = opt || {};
+    const s = String(v == null ? '' : v).trim().replace(/[,，]/g, '');
+    if (s === '') throw err(label + '没填', field);
+    if (!/^[+-]?(\d+\.?\d*|\.\d+)$/.test(s)) throw err(label + '要填数字（现在是「' + String(v).slice(0, 12) + '」）', field);
+    const x = Number(s);
+    if (x < lo || x > hi) throw err(label + '要在 ' + fmt(lo, 2) + ' 到 ' + fmt(hi, 2) + ' 之间', field);
+    const dp = opt.dp == null ? 2 : opt.dp;
+    if (Math.abs(x * Math.pow(10, dp) - Math.round(x * Math.pow(10, dp))) > 1e-6) throw err(label + (dp ? '最多 ' + dp + ' 位小数' : '要填整数'), field);
+    return x;
+  }
+  /* 日期 <-> UTC 天数 */
+  function dnum(y, m, d) { return Math.round(Date.UTC(y, m - 1, d) / DAY); }
+  function ymd(n) { const t = new Date(n * DAY); return { y: t.getUTCFullYear(), m: t.getUTCMonth() + 1, d: t.getUTCDate(), w: t.getUTCDay() }; }
+  function iso(n) { const t = ymd(n); return t.y + '-' + String(t.m).padStart(2, '0') + '-' + String(t.d).padStart(2, '0'); }
+  function md(n) { const t = ymd(n); return t.m + '月' + t.d + '日'; }
+  function parseDate(v, field, label) {
+    const s = String(v == null ? '' : v).trim().replace(/[/.]/g, '-');
+    const m = /^(\d{4})-(\d{1,2})-(\d{1,2})$/.exec(s);
+    if (!s) throw err(label + '没填', field);
+    if (!m) throw err(label + '要写成 2026-12-03 这样（现在是「' + String(v).slice(0, 12) + '」）', field);
+    const y = +m[1], mo = +m[2], d = +m[3];
+    if (y < 2000 || y > 2100) throw err(label + '的年份要在 2000 到 2100 之间', field);
+    const n = dnum(y, mo, d), t = ymd(n);
+    if (t.m !== mo || t.d !== d) throw err(label + '不是一个真实日期（' + s + '）', field);
+    return n;
+  }
+
+  /* 刷卡日 n 落进哪期账单：返回账单日的天数 */
+  function statementOf(card, n) {
+    const t = ymd(n);
+    if (t.d <= card.s) return dnum(t.y, t.m, card.s);
+    return dnum(t.y, t.m + 1, card.s); /* Date.UTC 会自动进位到下一年 */
+  }
+  function dueOf(card, st) {
+    if (card.mode === 'after') return st + card.n;
+    const t = ymd(st);
+    let c = dnum(t.y, t.m, card.n);
+    if (c <= st) c = dnum(t.y, t.m + 1, card.n);
+    return c;
+  }
+  function dueFor(card, n) { const st = statementOf(card, n); return { st, due: dueOf(card, st) }; }
+
+  function parse(st) {
+    if (!st || typeof st !== 'object') throw err('没有输入', null);
+    const P = {};
+    P.start = parseDate(st.start, 'start', '从哪天开始看');
+    P.yieldPct = num(st.yieldPct, 'yieldPct', '晚还的钱放着的年化（%）', 0, 20);
+    const cards = Array.isArray(st.cards) ? st.cards : [];
+    if (cards.length < 1) throw err('至少要 1 张卡', 'addCard');
+    if (cards.length > MAXCARDS) throw err('最多 ' + MAXCARDS + ' 张卡', 'addCard');
+    P.cards = cards.map((c, i) => {
+      const f = (k) => 'c' + k + '-' + i;
+      const name = String(c && c.name != null ? c.name : '').trim().slice(0, 12) || ('卡' + (i + 1));
+      const s = num(c.s, f('s'), name + '的账单日', 1, 28, { dp: 0 });
+      const mode = c.mode === 'after' ? 'after' : 'fixed';
+      const n = mode === 'after' ? num(c.n, f('n'), name + '出账后几天还', 1, 60, { dp: 0 }) : num(c.n, f('n'), name + '每月几号还', 1, 28, { dp: 0 });
+      const limit = Math.round(num(c.limit, f('limit'), name + '的可用额度（元）', 0, 10000000) * 100);
+      return { name, s, mode, n, limit, idx: i };
+    });
+    const seen = {};
+    P.cards.forEach((c, i) => { if (seen[c.name] != null) throw err('有两张卡都叫「' + c.name + '」，换个名字好分辨', 'c' + 'name-' + i); seen[c.name] = i; });
+    const buys = Array.isArray(st.buys) ? st.buys : [];
+    if (buys.length > MAXBUYS) throw err('最多 ' + MAXBUYS + ' 笔', 'addBuy');
+    P.buys = buys.map((b, i) => {
+      const label = String(b && b.label != null ? b.label : '').trim().slice(0, 16) || ('第 ' + (i + 1) + ' 笔');
+      const date = parseDate(b.date, 'bd-' + i, label + '的日期');
+      if (date < P.start) throw err(label + '的日期早于开始那天（' + iso(P.start) + '）', 'bd-' + i);
+      if (date > P.start + 366) throw err(label + '离开始那天超过一年了', 'bd-' + i);
+      const amt = Math.round(num(b.amt, 'ba-' + i, label + '的金额（元）', 0.01, 1000000) * 100);
+      return { label, date, amt, idx: i };
+    });
+    return P;
+  }
+
+  /* 每笔在每张卡上的免息天数 */
+  function options(P) {
+    return P.buys.map((b) => P.cards.map((c) => { const x = dueFor(c, b.date); return { st: x.st, due: x.due, days: x.due - b.date }; }));
+  }
+  /* 某张卡上一组笔（下标）能不能放得下：每笔刷下去那一刻，已刷未还的合计 ≤ 额度 */
+  function fits(P, opt, k, list) {
+    const c = P.cards[k];
+    for (const i of list) {
+      const t = P.buys[i].date;
+      let used = 0;
+      for (const j of list) {
+        const bj = P.buys[j];
+        /* j 在 t 时刻占用：j 刷卡早于 t，或同一天但排在 i 之前（含 i 本身）；且它那期还没到还款日 */
+        const before = bj.date < t || (bj.date === t && bj.idx <= P.buys[i].idx);
+        if (before && opt[j][k].due > t) used += bj.amt;
+      }
+      if (used > c.limit) return false;
+    }
+    return true;
+  }
+  /* 评价一种分配：assign[i] = 卡下标，-1 = 直接付 */
+  function evaluate(P, opt, assign) {
+    let md2 = 0, direct = 0;
+    const per = P.cards.map(() => []);
+    assign.forEach((k, i) => { if (k < 0) direct++; else { per[k].push(i); md2 += P.buys[i].amt * opt[i][k].days; } });
+    const ok = per.every((l, k) => fits(P, opt, k, l));
+    return { ok, md: md2, direct };
+  }
+  /* 比较：a 比 b 好返回 true */
+  function better(a, b) {
+    if (!b) return true;
+    if (a.md !== b.md) return a.md > b.md;
+    if (a.direct !== b.direct) return a.direct < b.direct;
+    for (let i = 0; i < a.assign.length; i++) {
+      const x = a.assign[i] < 0 ? 99 : a.assign[i], y = b.assign[i] < 0 ? 99 : b.assign[i];
+      if (x !== y) return x < y;
+    }
+    return false;
+  }
+  function optimize(P, opt, cap) {
+    cap = cap || NODE_CAP;
+    const n = P.buys.length, K = P.cards.length;
+    /* 参数完全一样的卡可以互换：空卡只有在前一张同样的卡已经有笔时才能用（打破对称，不影响最优值） */
+    const twin = P.cards.map((c, k) => { for (let j = k - 1; j >= 0; j--) { const d = P.cards[j]; if (d.s === c.s && d.mode === c.mode && d.n === c.n && d.limit === c.limit) return j; } return -1; });
+    const bestDays = opt.map((o, i) => Math.max(0, ...o.map((x) => x.days)) * P.buys[i].amt);
+    const order = P.buys.map((b, i) => i).sort((a, b) => bestDays[b] - bestDays[a] || a - b);
+    const suffix = new Array(n + 1).fill(0);
+    for (let t = n - 1; t >= 0; t--) suffix[t] = suffix[t + 1] + bestDays[order[t]];
+    const assign = new Array(n).fill(-1);
+    const per = P.cards.map(() => []);
+    let best = null, nodes = 0, capped = false;
+    (function go(t, cur, direct) {
+      if (++nodes > cap) { capped = true; return; }
+      if (t === n) {
+        const cand = { assign: assign.slice(), md: cur, direct };
+        if (better(cand, best)) best = cand;
+        return;
+      }
+      if (best && cur + suffix[t] < best.md) return;
+      const i = order[t];
+      /* 先试天数多的卡 */
+      const ks = []; for (let k = 0; k < K; k++) ks.push(k);
+      ks.sort((a, b) => opt[i][b].days - opt[i][a].days || a - b);
+      for (const k of ks) {
+        if (twin[k] >= 0 && !per[k].length && !per[twin[k]].length) continue;
+        per[k].push(i);
+        if (fits(P, opt, k, per[k])) { assign[i] = k; go(t + 1, cur + P.buys[i].amt * opt[i][k].days, direct); }
+        per[k].pop();
+        if (capped) return;
+      }
+      assign[i] = -1;
+      go(t + 1, cur, direct + 1);
+      assign[i] = -1;
+    })(0, 0, 0);
+    return { assign: best.assign, md: best.md, direct: best.direct, nodes: Math.min(nodes, cap), proven: !capped };
+  }
+  /* 对照①：全刷第一张，刷不下就顺延到下一张，都不行直接付 */
+  function planFirst(P, opt) {
+    const per = P.cards.map(() => []);
+    const order = P.buys.map((b, i) => i).sort((a, b) => P.buys[a].date - P.buys[b].date || a - b);
+    const assign = new Array(P.buys.length).fill(-1);
+    for (const i of order) {
+      for (let k = 0; k < P.cards.length; k++) { per[k].push(i); if (fits(P, opt, k, per[k])) { assign[i] = k; break; } per[k].pop(); }
+    }
+    return assign;
+  }
+  /* 对照②：按日期一笔一笔，每笔挑当时免息最长、还刷得下的那张（不往后看） */
+  function planGreedy(P, opt) {
+    const per = P.cards.map(() => []);
+    const order = P.buys.map((b, i) => i).sort((a, b) => P.buys[a].date - P.buys[b].date || a - b);
+    const assign = new Array(P.buys.length).fill(-1);
+    for (const i of order) {
+      const ks = P.cards.map((c, k) => k).sort((a, b) => opt[i][b].days - opt[i][a].days || a - b);
+      for (const k of ks) { per[k].push(i); if (fits(P, opt, k, per[k])) { assign[i] = k; break; } per[k].pop(); }
+    }
+    return assign;
+  }
+  function describe(P, opt, assign) {
+    const e = evaluate(P, opt, assign);
+    const rows = P.buys.map((b, i) => {
+      const k = assign[i];
+      if (k < 0) return { i, label: b.label, date: b.date, amt: b.amt, card: -1, st: null, due: null, days: 0 };
+      const o = opt[i][k];
+      return { i, label: b.label, date: b.date, amt: b.amt, card: k, st: o.st, due: o.due, days: o.days };
+    });
+    const total = P.buys.reduce((a, b) => a + b.amt, 0);
+    const avg = total ? e.md / total : 0;
+    const interest = e.md * P.yieldPct / 100 / 365; /* 分 */
+    return { assign: assign.slice(), rows, md: e.md, direct: e.direct, ok: e.ok, avg, interest, total };
+  }
+  /* 还款单：按还款日 + 卡分组 */
+  function bills(P, plan) {
+    const map = {};
+    plan.rows.forEach((r) => {
+      if (r.card < 0) return;
+      const key = r.due + '|' + r.card;
+      (map[key] = map[key] || { due: r.due, card: r.card, st: r.st, amt: 0, items: [] });
+      map[key].amt += r.amt; map[key].items.push(r.i);
+    });
+    return Object.keys(map).map((k) => map[k]).sort((a, b) => a.due - b.due || a.card - b.card);
+  }
+  /* 日历：从开始那天起 42 天，每天刷哪张最晚还（不管额度） */
+  function calendar(P) {
+    const out = [];
+    for (let d = 0; d < CAL; d++) {
+      const n = P.start + d;
+      let best = -1, bd = -1, due = null;
+      P.cards.forEach((c, k) => { const x = dueFor(c, n); if (x.due - n > bd) { bd = x.due - n; best = k; due = x.due; } });
+      const stmt = P.cards.filter((c) => ymd(n).d === c.s).map((c) => c.idx);
+      out.push({ n, card: best, days: bd, due, stmt });
+    }
+    return out;
+  }
+  /* 一张卡最多、最少多少天免息（整个周期里） */
+  function cardRange(P, c) {
+    let lo = Infinity, hi = -1, hiDay = null;
+    for (let d = 0; d < 62; d++) { const n = P.start + d, x = dueFor(c, n), v = x.due - n; if (v > hi) { hi = v; hiDay = n; } if (v < lo) lo = v; }
+    return { lo, hi, hiDay };
+  }
+
+  function calculate(st, cap) {
+    const P = parse(st);
+    const opt = options(P);
+    const o = optimize(P, opt, cap);
+    const best = describe(P, opt, o.assign);
+    best.proven = o.proven; best.nodes = o.nodes;
+    const first = describe(P, opt, planFirst(P, opt));
+    const greedy = describe(P, opt, planGreedy(P, opt));
+    const ranges = P.cards.map((c) => cardRange(P, c));
+    const cal = calendar(P);
+    const bl = bills(P, best);
+    const r = { P, opt, best, first, greedy, ranges, cal, bills: bl };
+    r.summary = summary(r);
+    r.facts = facts(r);
+    return r;
+  }
+  function cardName(P, k) { return k < 0 ? '直接付' : P.cards[k].name; }
+  function summary(r) {
+    const P = r.P, B = r.best;
+    if (!P.buys.length) {
+      const c = r.cal[0];
+      return '今天（' + md(P.start) + '）刷' + cardName(P, c.card) + '最晚还：' + md(c.due) + '还，免息 ' + c.days + ' 天。';
+    }
+    const groups = {};
+    B.rows.forEach((x) => { const k = cardName(P, x.card); (groups[k] = groups[k] || []).push(x.label); });
+    const parts = [];
+    P.cards.forEach((c, k) => { if (groups[c.name]) parts.push(listNames(groups[c.name]) + '刷' + c.name); });
+    if (groups['直接付']) parts.push(listNames(groups['直接付']) + '不刷卡、直接付');
+    return parts.join('，') + '：' + P.buys.length + ' 笔 ' + yuan(B.total) + ' 平均晚 ' + fmt(B.avg, 1) + ' 天还。';
+  }
+  function listNames(a) { return a.length <= 3 ? a.join('、') : a.slice(0, 3).join('、') + '等 ' + a.length + ' 笔'; }
+  function facts(r) {
+    const P = r.P, B = r.best, F = [];
+    if (P.buys.length) {
+      F.push('合计 ' + fmt(B.md / 100, 0) + ' 元·天（每笔金额 × 晚还天数）；按年化 ' + fmt(P.yieldPct, 2) + '% 算，这笔钱晚还期间大约值 ' + yuan(B.interest) + '。');
+      if (r.bills.length) {
+        const b0 = r.bills[0];
+        F.push('最先要还的是 ' + md(b0.due) + ' ' + P.cards[b0.card].name + ' ' + yuan(b0.amt) + '；一共 ' + r.bills.length + ' 次还款，最晚一次 ' + md(r.bills[r.bills.length - 1].due) + '。');
+      }
+      const dG = B.md - r.greedy.md, dF = B.md - r.first.md;
+      F.push('按日期每笔挑当时免息最长的卡：' + (dG > 0 ? '少 ' + fmt(dG / 100, 0) + ' 元·天' + (r.greedy.direct > B.direct ? '，还有 ' + r.greedy.direct + ' 笔刷不下要直接付' : '') + '。' : '和本页一样。'));
+      F.push('全刷' + P.cards[0].name + '、刷不下才换：平均 ' + fmt(r.first.avg, 1) + ' 天' + (dF > 0 ? '，比本页少 ' + fmt(dF / 100, 0) + ' 元·天。' : '，和本页一样。'));
+      const edge = B.rows.filter((x) => x.card >= 0 && ymd(x.date).d === P.cards[x.card].s);
+      if (edge.length) F.push(edge.map((x) => x.label).join('、') + '正好在' + P.cards[edge[0].card].name + '账单日当天刷：本页算进本期，有的银行按入账日算会进下期，以账单为准。');
+      if (B.direct) F.push(B.direct + ' 笔不刷卡、直接付（算 0 天）：额度不够全刷下，额度留给了金额 × 天数更大的几笔' + (r.first.direct < B.direct ? '，「全刷' + P.cards[0].name + '」那种只直接付 ' + r.first.direct + ' 笔，但少 ' + fmt((B.md - r.first.md) / 100, 0) + ' 元·天' : '') + '。');
+      if (!B.proven) F.push('笔数和卡多，搜索到上限 ' + fmt(B.nodes, 0) + ' 步还没证完，这是目前找到最好的排法，不保证最优。');
+    }
+    P.cards.forEach((c, k) => {
+      const g = r.ranges[k];
+      F.push(c.name + '：账单日 ' + c.s + ' 号，' + (c.mode === 'after' ? '出账后 ' + c.n + ' 天还' : '每月 ' + c.n + ' 号还') + '，免息 ' + g.lo + '–' + g.hi + ' 天，账单日第二天刷最长。');
+    });
+    return F;
+  }
+
+  function suggestions(st, r) {
+    const P = r.P, B = r.best, out = [];
+    const copy = (o) => JSON.parse(JSON.stringify(o));
+    if (!P.buys.length) return out;
+    const calc = (x) => { const r2 = calculate(x, SUG_CAP); if (!r2.best.proven) throw new Error('unproven'); return r2; };
+    /* 主排法没证完时，建议里的对比也不可靠：只给压力测试 */
+    const quick = !B.proven;
+    /* ① 某一笔晚 1–3 天刷 */
+    let bestMove = null;
+    if (!quick) P.buys.forEach((b, i) => {
+      for (let dl = 1; dl <= 3; dl++) {
+        const s = copy(st); s.buys[i].date = iso(b.date + dl);
+        let r2; try { r2 = calc(s); } catch (e) { continue; }
+        const gain = r2.best.md - B.md;
+        /* 重新整体排过之后合计多出来的元·天（晚刷那几天本身已扣掉）；至少多 1 元·天才提 */
+        if (gain >= 100 && (!bestMove || gain > bestMove.gain)) bestMove = { gain, s, r2, i, dl };
+      }
+    });
+    if (bestMove) {
+      const b = P.buys[bestMove.i], x = bestMove.r2.best.rows[bestMove.i];
+      out.push({ id: 'move', apply: bestMove.s, text: '要是' + b.label + '能晚 ' + bestMove.dl + ' 天（' + md(b.date + bestMove.dl) + '）刷' + cardName(P, x.card) + '：这笔 ' + x.days + ' 天免息，合计多 ' + fmt(bestMove.gain / 100, 0) + ' 元·天。' });
+    }
+    /* ② 额度卡住时：提哪张卡的额度 */
+    if (!quick && B.md < r.best.rows.reduce((a, x, i) => a + P.buys[i].amt * Math.max(...r.opt[i].map((o) => o.days)), 0)) {
+      let bestUp = null;
+      P.cards.forEach((c, k) => {
+        [2000, 5000, 10000, 20000].forEach((up) => {
+          if (bestUp && bestUp.k === k) return;
+          const s = copy(st); s.cards[k].limit = String(c.limit / 100 + up);
+          let r2; try { r2 = calc(s); } catch (e) { return; }
+          const gain = r2.best.md - B.md;
+          if (gain > 0 && (!bestUp || gain / up > bestUp.gain / bestUp.up + 1e-9)) bestUp = { k, up, gain, s, r2 };
+        });
+      });
+      if (bestUp) out.push({ id: 'limit', apply: bestUp.s, text: P.cards[bestUp.k].name + '额度多 ' + yuan(bestUp.up * 100) + '（到 ' + yuan(bestUp.s.cards[bestUp.k].limit * 100) + '）：' + bestUp.r2.summary + '合计多 ' + fmt(bestUp.gain / 100, 0) + ' 元·天。' });
+    }
+    /* ③ 改一张卡的账单日（很多银行一年能改一次） */
+    let bestS = null;
+    if (!quick) P.cards.forEach((c, k) => {
+      for (let s1 = 1; s1 <= 28; s1++) {
+        if (s1 === c.s) continue;
+        const s = copy(st); s.cards[k].s = String(s1);
+        if (s.cards[k].mode !== 'after') {
+          /* 还款日跟着平移，保持「出账到还款」的间隔不变 */
+          const gap = ((c.n - c.s) % 28 + 28) % 28 || 28; let n1 = ((s1 + gap - 1) % 28) + 1; s.cards[k].n = String(n1);
+        }
+        let r2; try { r2 = calc(s); } catch (e) { continue; }
+        const gain = r2.best.md - B.md;
+        if (gain > 0 && (!bestS || gain > bestS.gain)) bestS = { k, s1, gain, s, r2 };
+      }
+    });
+    if (bestS) out.push({ id: 'stmt', apply: bestS.s, text: '把' + P.cards[bestS.k].name + '的账单日改到 ' + bestS.s1 + ' 号' + (bestS.s.cards[bestS.k].mode === 'after' ? '' : '（还款日跟着变成 ' + bestS.s.cards[bestS.k].n + ' 号）') + '：平均 ' + fmt(bestS.r2.best.avg, 1) + ' 天，合计多 ' + fmt(bestS.gain / 100, 0) + ' 元·天。' });
+    /* ④ 压力：每笔都多两成 */
+    const s = copy(st); s.buys.forEach((b, i) => { b.amt = String(Math.round(P.buys[i].amt * 1.2) / 100); });
+    let r3; try { r3 = calc(s); } catch (e) { r3 = null; }
+    if (r3) out.push({ id: 'more', apply: s, text: '要是每笔都比估的多花两成：' + (r3.best.direct ? r3.best.direct + ' 笔不刷卡、直接付，' : '额度还够，') + '平均 ' + fmt(r3.best.avg, 1) + ' 天，最先 ' + (r3.bills[0] ? md(r3.bills[0].due) + ' 还 ' + yuan(r3.bills[0].amt) : '没有要还的') + '。' });
+    return out;
+  }
+
+  function csvCell(s) { s = String(s); return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; }
+  function toCSV(r, when) {
+    const P = r.P, L = [];
+    const row = (a) => L.push(a.map(csvCell).join(','));
+    row(['还款日还早', when]); row(['结论', r.summary]); L.push('');
+    if (P.buys.length) {
+      row(['这笔', '刷卡日', '金额(元)', '刷哪张', '进哪期账单', '还款日', '免息天数']);
+      r.best.rows.forEach((x) => row([x.label, iso(x.date), round(x.amt / 100, 2), cardName(P, x.card), x.st == null ? '' : iso(x.st), x.due == null ? '' : iso(x.due), x.days]));
+      L.push(''); row(['还款日', '卡', '要还(元)', '包含']);
+      r.bills.forEach((b) => row([iso(b.due), P.cards[b.card].name, round(b.amt / 100, 2), b.items.map((i) => P.buys[i].label).join('、')]));
+      L.push(''); row(['刷法', '元·天', '平均天数', '直接付几笔']);
+      [['本页排的', r.best], ['每笔挑当时最长', r.greedy], ['全刷' + P.cards[0].name + '刷不下才换', r.first]].forEach(([l, s]) => row([l, round(s.md / 100, 2), round(s.avg, 2), s.direct]));
+      L.push('');
+    }
+    row(['日期', '刷哪张最晚还', '还款日', '免息天数']);
+    r.cal.forEach((c) => row([iso(c.n), cardName(P, c.card), iso(c.due), c.days]));
+    return L.join('\n') + '\n';
+  }
+  function toMD(r, when, sg) {
+    const P = r.P, L = [];
+    L.push('# 还款日还早', '', '生成时间：' + when + '　从 ' + iso(P.start) + ' 开始看', '', '**' + r.summary + '**', '');
+    if (P.buys.length) {
+      L.push('| 这笔 | 刷卡日 | 金额 | 刷哪张 | 还款日 | 免息 |', '|---|---|---:|---|---|---:|');
+      r.best.rows.forEach((x) => L.push('| ' + x.label + ' | ' + iso(x.date) + ' | ' + yuan(x.amt) + ' | ' + cardName(P, x.card) + ' | ' + (x.due == null ? '—' : iso(x.due)) + ' | ' + x.days + ' 天 |'));
+      L.push('', '## 还款单', '', '| 还款日 | 卡 | 要还 | 包含 |', '|---|---|---:|---|');
+      r.bills.forEach((b) => L.push('| ' + iso(b.due) + ' | ' + P.cards[b.card].name + ' | ' + yuan(b.amt) + ' | ' + b.items.map((i) => P.buys[i].label).join('、') + ' |'));
+      L.push('');
+    }
+    L.push('## 要点', ''); r.facts.forEach((f) => L.push('- ' + f));
+    if (sg && sg.length) { L.push('', '## 换个条件', ''); sg.forEach((s) => L.push('- ' + s.text)); }
+    L.push('', '账单日、还款日、额度都是自己填的；本页假设账单日当天刷算本期、每期在还款日全额还清、还款日不顺延。各银行细则不同，以账单为准。示例数据为虚构。');
+    return L.join('\n') + '\n';
+  }
+
+  const API = { SUG_CAP, MAXCARDS, MAXBUYS, CAL, NODE_CAP, round, fmt, yuan, dnum, ymd, iso, md, parseDate, parse, statementOf, dueOf, dueFor, options, fits, evaluate, optimize, planFirst, planGreedy, describe, bills, calendar, cardRange, calculate, suggestions, toCSV, toMD, cardName };
+  if (typeof module !== 'undefined' && module.exports) module.exports = API;
+  else root.AppCore = API;
+})(typeof window !== 'undefined' ? window : globalThis);
+
+  </script>
+  <script>
+/* 还款日还早 · 界面层 */
+(function () {
+  'use strict';
+  const C = window.AppCore;
+  const KEY = 'not-due-yet:v1';
+  const COLORS = ['#8a4b1f', '#2f6b5a', '#4b4f8a', '#8a2f5d'], GREY = '#9a9182';
+  const mkB = (arr) => arr.map(([l, d, a]) => ({ label: l, date: d, amt: String(a) }));
+  const DEFAULT = { start: '2026-11-21', yieldPct: '1.5',
+    cards: [{ name: '招行卡', s: '5', mode: 'fixed', n: '23', limit: '8000' }, { name: '工行卡', s: '20', mode: 'after', n: '25', limit: '6000' }, { name: '白卡', s: '12', mode: 'fixed', n: '2', limit: '3000' }],
+    buys: mkB([['换手机', '2026-11-28', 5999], ['回家机票', '2026-12-03', 2380], ['超市囤货', '2026-12-06', 680], ['羽绒服', '2026-12-13', 1299], ['冬至聚餐', '2026-12-21', 860], ['跨年酒店', '2026-12-30', 1500]]) };
+  const copy = (o) => JSON.parse(JSON.stringify(o));
+  const PRESETS = [
+    ['默认：三张卡、六笔年底开销', DEFAULT],
+    ['额度卡住：两张卡都只有 3000', Object.assign(copy(DEFAULT), { cards: [{ name: '招行卡', s: '5', mode: 'fixed', n: '23', limit: '3000' }, { name: '工行卡', s: '20', mode: 'after', n: '25', limit: '3000' }] })],
+    ['只有一张卡：看哪天刷最晚还', { start: '2026-11-21', yieldPct: '1.5', cards: [{ name: '唯一那张', s: '8', mode: 'after', n: '20', limit: '10000' }], buys: mkB([['房租押金', '2026-11-25', 4000], ['电脑', '2026-12-09', 6999]]) }],
+    ['什么都不刷，只看月历', { start: '2026-11-21', yieldPct: '1.5', cards: copy(DEFAULT.cards), buys: [] }]
+  ];
+  const $ = (id) => document.getElementById(id);
+  const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  let state = copy(DEFAULT);
+  let last = null;
+
+  function save() { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) { /* 隐私模式忽略 */ } }
+  function load() {
+    try {
+      const o = JSON.parse(localStorage.getItem(KEY) || 'null');
+      if (!o || typeof o !== 'object' || Array.isArray(o) || !Array.isArray(o.cards) || !Array.isArray(o.buys)) return null;
+      const t = (v, n) => String(v == null ? '' : v).slice(0, n);
+      const s = { start: t(o.start, 10), yieldPct: t(o.yieldPct, 10) };
+      s.cards = o.cards.slice(0, C.MAXCARDS).map((c) => ({ name: t(c && c.name, 12), s: t(c && c.s, 4), mode: c && c.mode === 'after' ? 'after' : 'fixed', n: t(c && c.n, 4), limit: t(c && c.limit, 12) }));
+      s.buys = o.buys.slice(0, C.MAXBUYS).map((b) => ({ label: t(b && b.label, 16), date: t(b && b.date, 10), amt: t(b && b.amt, 12) }));
+      if (!s.cards.length) return null;
+      return s;
+    } catch (e) { return null; }
+  }
+  function buildCards() {
+    $('cards').innerHTML = state.cards.map((c, i) =>
+      '<div class="cc k' + i + '"><div class="full"><label for="cname-' + i + '">卡的名字</label><input id="cname-' + i + '" maxlength="12"></div>' +
+      '<div><label for="cs-' + i + '">账单日（号）</label><input id="cs-' + i + '" inputmode="numeric" maxlength="4"></div>' +
+      '<div><label for="climit-' + i + '">可用额度（元）</label><input id="climit-' + i + '" inputmode="decimal" maxlength="12"></div>' +
+      '<div><label for="cm-' + i + '">还款日怎么定</label><select id="cm-' + i + '"><option value="fixed">每月几号还</option><option value="after">出账后几天还</option></select></div>' +
+      '<div><label for="cn-' + i + '" id="cnl-' + i + '"></label><input id="cn-' + i + '" inputmode="numeric" maxlength="4"></div></div>').join('');
+    state.cards.forEach((c, i) => {
+      const bind = (id, key, ev) => { const e = $(id); e.value = c[key]; e.addEventListener(ev || 'input', () => { state.cards[i][key] = e.value; if (key === 'mode') cnLabel(i); run(); }); };
+      bind('cname-' + i, 'name'); bind('cs-' + i, 's'); bind('climit-' + i, 'limit'); bind('cm-' + i, 'mode', 'change'); bind('cn-' + i, 'n');
+      cnLabel(i);
+    });
+    $('addCard').disabled = state.cards.length >= C.MAXCARDS; $('delCard').disabled = state.cards.length <= 1;
+  }
+  function cnLabel(i) { $('cnl-' + i).textContent = state.cards[i].mode === 'after' ? '出账后几天还' : '每月几号还'; }
+  function buildBuys() {
+    $('buys').innerHTML = state.buys.length ? state.buys.map((b, i) =>
+      '<div class="buy"><div><label for="bl-' + i + '">第 ' + (i + 1) + ' 笔</label><input id="bl-' + i + '" maxlength="16"></div>' +
+      '<div><label for="bd-' + i + '">哪天刷</label><input id="bd-' + i + '" maxlength="10"></div>' +
+      '<div><label for="ba-' + i + '">多少钱（元）</label><input id="ba-' + i + '" inputmode="decimal" maxlength="12"></div>' +
+      '<div class="out" id="bo-' + i + '"></div></div>').join('') : '<p class="muted">还没有要刷的。只看下面的月历也行。</p>';
+    state.buys.forEach((b, i) => {
+      [['bl-', 'label'], ['bd-', 'date'], ['ba-', 'amt']].forEach(([p, k]) => { const e = $(p + i); e.value = b[k]; e.addEventListener('input', () => { state.buys[i][k] = e.value; run(); }); });
+    });
+    $('addBuy').disabled = state.buys.length >= C.MAXBUYS; $('delBuy').disabled = !state.buys.length;
+  }
+  function fill() { $('start').value = state.start; $('yieldPct').value = state.yieldPct; buildCards(); buildBuys(); }
+  function col(k) { return k < 0 ? GREY : COLORS[k]; }
+  function chip(P, k) { return '<span class="chip" style="background:' + col(k) + '">' + esc(C.cardName(P, k)) + '</span>'; }
+  function sugList(box, sg) {
+    box.innerHTML = '';
+    sg.forEach((x) => {
+      const d = document.createElement('div'); d.className = 'sug';
+      d.innerHTML = '<span>' + esc(x.text) + '</span>';
+      const bt = document.createElement('button'); bt.textContent = '代回去算'; bt.dataset.sug = x.id;
+      bt.addEventListener('click', () => { state = copy(x.apply); fill(); run(); });
+      d.appendChild(bt); box.appendChild(d);
+    });
+  }
+  const WD = ['一', '二', '三', '四', '五', '六', '日'];
+  function renderCal(r) {
+    const P = r.P;
+    const buyDays = {}; P.buys.forEach((b) => { buyDays[b.date] = (buyDays[b.date] || 0) + 1; });
+    const pad = (C.ymd(P.start).w + 6) % 7;
+    let h = WD.map((w) => '<div class="wd">' + w + '</div>').join('');
+    for (let i = 0; i < pad; i++) h += '<div class="c pad"></div>';
+    r.cal.forEach((c) => {
+      const t = C.ymd(c.n);
+      h += '<div class="c' + (buyDays[c.n] ? ' hasbuy' : '') + '" style="background:' + col(c.card) + '" title="' + esc(C.md(c.n) + ' 刷' + C.cardName(P, c.card) + '，' + C.md(c.due) + '还') + '">' +
+        (c.stmt.length ? '<span class="st">出</span>' : '') + '<b>' + (t.d === 1 || c.n === P.start ? t.m + '/' + t.d : t.d) + '</b><span class="n">' + c.days + '</span><span class="nm"> 天</span></div>';
+    });
+    $('cal').innerHTML = h;
+    $('legend').innerHTML = P.cards.map((c, k) => '<span><i style="background:' + col(k) + '"></i>' + esc(c.name) + '</span>').join('');
+  }
+  function render(r, sg) {
+    const P = r.P, B = r.best;
+    $('summary').textContent = r.summary;
+    $('facts').innerHTML = r.facts.map((f) => '<li>' + esc(f) + '</li>').join('');
+    $('outTop').style.display = '';
+    B.rows.forEach((x, i) => {
+      $('bo-' + i).innerHTML = chip(P, x.card) + (x.card < 0 ? '不刷卡，0 天' : '进 ' + esc(C.md(x.st)) + ' 账单 → <b>' + esc(C.md(x.due)) + '还</b>，' + x.days + ' 天');
+    });
+    renderCal(r);
+    $('out').style.display = P.buys.length ? '' : 'none';
+    if (!P.buys.length) return;
+    $('bills').innerHTML = r.bills.length ? r.bills.map((b) => '<div class="bill"><span>' + esc(C.md(b.due)) + '</span><span class="what">' + chip(P, b.card) + esc(b.items.map((i) => P.buys[i].label).join('、')) + '</span><span class="amt">' + C.yuan(b.amt) + '</span></div>').join('') +
+      (B.direct ? '<p class="muted" style="margin-top:6px">另有 ' + B.direct + ' 笔直接付，不进还款单。</p>' : '') : '<p class="muted">全部直接付，没有要还的。</p>';
+    const rows = [['本页排的', B, true], ['按日期每笔挑当时最长', r.greedy], ['全刷' + P.cards[0].name + '、刷不下才换', r.first]];
+    let h = '<tr><th>刷法</th><th>元·天</th><th>平均晚还</th><th>直接付</th><th>比本页少</th></tr>';
+    rows.forEach(([lab, s, b]) => {
+      h += '<tr class="' + (b ? 'best' : '') + '"><td>' + esc(lab) + '</td><td>' + C.fmt(s.md / 100, 0) + '</td><td>' + C.fmt(s.avg, 1) + ' 天</td><td>' + s.direct + ' 笔</td><td>' + (b ? '—' : C.fmt((B.md - s.md) / 100, 0) + ' 元·天') + '</td></tr>';
+    });
+    $('cmpTbl').innerHTML = h;
+    $('sugCard').style.display = sg.length ? '' : 'none';
+    sugList($('sugs'), sg);
+  }
+  function run() {
+    [].forEach.call(document.querySelectorAll('.bad'), (e) => e.classList.remove('bad'));
+    try {
+      const r = C.calculate(state);
+      const sg = C.suggestions(state, r);
+      $('error').style.display = 'none';
+      render(r, sg);
+      last = { r, sg };
+    } catch (e) {
+      last = null;
+      if (e.field) { const el = $(e.field); if (el) el.classList.add('bad'); }
+      $('error').textContent = '算不了：' + e.message; $('error').style.display = 'block';
+      $('out').style.display = 'none'; $('outTop').style.display = 'none'; $('cal').innerHTML = ''; $('legend').innerHTML = '';
+      state.buys.forEach((b, i) => { const o = $('bo-' + i); if (o) o.innerHTML = ''; });
+    }
+    save();
+  }
+
+  /* ── 导出 ── */
+  function stamp() { const d = new Date(), z = (n) => String(n).padStart(2, '0'); return d.getFullYear() + '-' + z(d.getMonth() + 1) + '-' + z(d.getDate()) + ' ' + z(d.getHours()) + ':' + z(d.getMinutes()); }
+  function download(name, blob) { const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000); }
+  function wrap(g, t, w) {
+    const NOHEAD = '，。、；：！？）」』%·';
+    const out = []; let line = [];
+    const toks = String(t).match(/[+-]?¥?[0-9][0-9,.:%]*|[A-Za-z]+|[\s\S]/g) || [];
+    const width = (a) => g.measureText(a.join('')).width;
+    for (const tk of toks) {
+      if (line.length && width(line.concat([tk])) > w) {
+        let carry = [tk];
+        while (line.length > 1 && (NOHEAD.indexOf(carry[0][0]) >= 0 || '（「『'.indexOf(line[line.length - 1]) >= 0)) carry.unshift(line.pop());
+        out.push(line.join(''));
+        line = carry; if (/^\s+$/.test(line[0])) line.shift();
+      } else line.push(tk);
+    }
+    if (line.length) out.push(line.join('')); return out;
+  }
+  function fitText(g, t, w, size, min, bold, FF) {
+    let fs = size; g.font = (bold ? 'bold ' : '') + fs + 'px ' + FF;
+    while (fs > min && g.measureText(t).width > w) { fs -= 1; g.font = (bold ? 'bold ' : '') + fs + 'px ' + FF; }
+    if (g.measureText(t).width <= w) return t;
+    let s = t; while (s.length > 1 && g.measureText(s + '…').width > w) s = s.slice(0, -1);
+    return s + '…';
+  }
+  function drawPNG(Lx) {
+    const r = Lx.r, P = r.P;
+    const Wd = 1080, H = 1350, X = 90, TW = 900;
+    const cv = document.createElement('canvas'); cv.width = Wd; cv.height = H;
+    const g = cv.getContext('2d'), FF = '"PingFang SC","Microsoft YaHei",sans-serif';
+    g.fillStyle = '#f4f1ea'; g.fillRect(0, 0, Wd, H);
+    g.fillStyle = '#fff'; g.fillRect(50, 50, Wd - 100, H - 100);
+    g.fillStyle = '#7a7062';
+    g.fillText(fitText(g, '还款日还早 · ' + P.cards.length + ' 张卡 · ' + P.buys.length + ' 笔 · 从 ' + C.iso(P.start) + ' 看', TW, 26, 16, false, FF), X, 116);
+    g.fillStyle = '#2a2620'; g.font = 'bold 32px ' + FF;
+    let y = 168;
+    const sl = wrap(g, r.summary, TW);
+    if (sl.length > 3) { sl.length = 3; sl[2] = fitText(g, sl[2] + '……', TW, 32, 32, true, FF); }
+    sl.forEach((l) => { g.fillText(l, X, y); y += 44; });
+    y += 4;
+    /* 六周月历 */
+    const cw = TW / 7, ch = 62, pad = (C.ymd(P.start).w + 6) % 7;
+    g.font = '18px ' + FF; g.fillStyle = '#7a7062';
+    WD.forEach((w, i) => g.fillText(w, X + i * cw + cw / 2 - 9, y + 4)); y += 14;
+    const buyDays = {}; P.buys.forEach((b) => { buyDays[b.date] = 1; });
+    r.cal.forEach((c, j) => {
+      const pos = pad + j, cx = X + (pos % 7) * cw, cy = y + Math.floor(pos / 7) * ch;
+      g.fillStyle = col(c.card); g.fillRect(cx + 2, cy + 2, cw - 4, ch - 4);
+      if (buyDays[c.n]) { g.strokeStyle = '#2a2620'; g.lineWidth = 4; g.strokeRect(cx + 4, cy + 4, cw - 8, ch - 8); }
+      const t = C.ymd(c.n);
+      g.fillStyle = '#fff'; g.font = '16px ' + FF; g.fillText(t.d === 1 || j === 0 ? t.m + '/' + t.d : String(t.d), cx + 9, cy + 23);
+      g.font = 'bold 24px ' + FF; g.fillText(String(c.days), cx + 9, cy + 51);
+      if (c.stmt.length) { g.fillStyle = 'rgba(255,255,255,.9)'; g.fillRect(cx + cw - 30, cy + 7, 22, 20); g.fillStyle = '#2a2620'; g.font = '14px ' + FF; g.fillText('出', cx + cw - 26, cy + 22); }
+    });
+    const rowsN = Math.ceil((pad + r.cal.length) / 7);
+    y += rowsN * ch + 26;
+    g.font = '18px ' + FF; let lx = X;
+    P.cards.forEach((c, k) => { g.fillStyle = col(k); g.fillRect(lx, y - 14, 16, 16); g.fillStyle = '#2a2620'; const t = fitText(g, c.name, 180, 18, 12, false, FF); g.fillText(t, lx + 22, y); lx += 22 + g.measureText(t).width + 22; });
+    const note = '大数字 = 那天刷最晚还的卡的免息天数；黑框 = 有要刷的';
+    g.font = '18px ' + FF;
+    if (X + TW - lx < g.measureText(note).width) { y += 30; lx = X; }
+    g.fillStyle = '#7a7062'; g.fillText(fitText(g, note, X + TW - lx, 18, 14, false, FF), lx, y);
+    y += 44;
+    const bottom = H - 140;
+    if (P.buys.length && r.bills.length) {
+      g.fillStyle = '#7a7062'; g.font = '20px ' + FF; g.fillText('还款单', X, y); y += 10;
+      g.strokeStyle = '#ddd3c2'; g.lineWidth = 1; g.beginPath(); g.moveTo(X, y); g.lineTo(X + TW, y); g.stroke();
+      const maxB = Math.min(r.bills.length, 5);
+      for (let i = 0; i < maxB; i++) {
+        const b = r.bills[i]; y += 36;
+        g.fillStyle = '#2a2620'; g.font = '22px ' + FF; g.fillText(C.md(b.due), X, y);
+        g.fillStyle = col(b.card); g.fillRect(X + 130, y - 20, 12, 24);
+        g.fillStyle = '#2a2620'; g.fillText(fitText(g, P.cards[b.card].name + '：' + b.items.map((k) => P.buys[k].label).join('、'), 560, 22, 19, false, FF), X + 152, y);
+        g.font = 'bold 22px ' + FF; const a = C.yuan(b.amt); g.fillText(a, X + TW - g.measureText(a).width, y);
+      }
+      if (r.bills.length > maxB) { y += 32; g.fillStyle = '#7a7062'; g.font = '19px ' + FF; g.fillText('还有 ' + (r.bills.length - maxB) + ' 次还款见表格', X, y); }
+      y += 40;
+    }
+    g.font = '22px ' + FF; g.fillStyle = '#2a2620';
+    for (const f of r.facts) {
+      const ls = wrap(g, '· ' + f, TW);
+      if (y + ls.length * 32 > bottom) break;
+      ls.forEach((l) => { g.fillText(l, X, y); y += 32; }); y += 4;
+    }
+    g.fillStyle = '#7a7062'; g.font = '19px ' + FF;
+    wrap(g, '账单日、还款日、额度都是自己填的；假设账单日当天刷算本期、每期全额还清、不顺延。各行细则以账单为准，示例为虚构。', TW).forEach((l, i) => g.fillText(l, X, H - 104 + i * 28));
+    return cv;
+  }
+  function backup() {
+    const r = last.r, P = r.P;
+    return { app: '还款日还早', version: 1, savedAt: stamp(), input: copy(state),
+      result: { summary: r.summary, facts: r.facts, proven: r.best.proven,
+        buys: r.best.rows.map((x) => ({ label: x.label, date: C.iso(x.date), amt: x.amt / 100, card: C.cardName(P, x.card), due: x.due == null ? null : C.iso(x.due), days: x.days })),
+        bills: r.bills.map((b) => ({ due: C.iso(b.due), card: P.cards[b.card].name, amt: b.amt / 100 })),
+        yuanDays: r.best.md / 100, avgDays: C.round(r.best.avg, 2) } };
+  }
+  function init() {
+    ['start', 'yieldPct'].forEach((k) => $(k).addEventListener('input', () => { state[k] = $(k).value; run(); }));
+    $('addCard').addEventListener('click', () => { if (state.cards.length >= C.MAXCARDS) return; state.cards.push({ name: '卡' + (state.cards.length + 1), s: '15', mode: 'fixed', n: '5', limit: '5000' }); buildCards(); run(); });
+    $('delCard').addEventListener('click', () => { if (state.cards.length <= 1) return; state.cards.pop(); buildCards(); run(); });
+    $('addBuy').addEventListener('click', () => {
+      if (state.buys.length >= C.MAXBUYS) return;
+      const lb = state.buys[state.buys.length - 1];
+      state.buys.push({ label: '第 ' + (state.buys.length + 1) + ' 笔', date: lb ? lb.date : state.start, amt: '500' }); buildBuys(); run();
+    });
+    $('delBuy').addEventListener('click', () => { if (!state.buys.length) return; state.buys.pop(); buildBuys(); run(); });
+    PRESETS.forEach((p) => {
+      const b = document.createElement('button'); b.className = 'ghost'; b.textContent = p[0];
+      b.addEventListener('click', () => { state = copy(p[1]); fill(); run(); });
+      $('presets').appendChild(b);
+    });
+    $('reset').addEventListener('click', () => { state = copy(DEFAULT); fill(); run(); });
+    $('dlCSV').addEventListener('click', () => { if (last) download('还款日还早.csv', new Blob(['\ufeff' + C.toCSV(last.r, stamp())], { type: 'text/csv;charset=utf-8' })); });
+    $('dlMD').addEventListener('click', () => { if (last) download('还款日还早.md', new Blob([C.toMD(last.r, stamp(), last.sg)], { type: 'text/markdown;charset=utf-8' })); });
+    $('dlJSON').addEventListener('click', () => { if (last) download('还款日还早-备份.json', new Blob([JSON.stringify(backup(), null, 2)], { type: 'application/json' })); });
+    $('dlPNG').addEventListener('click', () => { if (last) drawPNG(last).toBlob((b) => download('还款日还早-1080x1350.png', b), 'image/png'); });
+    state = load() || copy(DEFAULT);
+    fill(); run();
+    window.__ex = { last: () => last, state: () => state, presets: PRESETS, png: () => last && drawPNG(last).toDataURL('image/png') };
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
+})();
+
+  </script>
+</body>
+</html>
